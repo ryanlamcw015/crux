@@ -1,0 +1,13 @@
+# Tool settings only. Dependencies live in requirements.txt (Vercel installs from it).
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning:starlette.*"]

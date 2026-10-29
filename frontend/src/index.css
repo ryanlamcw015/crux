@@ -1,0 +1,123 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, sans-serif;
+
+  --color-ink-950: #070b10;
+  --color-ink-900: #0b1118;
+  --color-ink-800: #121a24;
+  --color-ink-700: #1b2633;
+  --color-ink-600: #2a3747;
+  --color-ink-400: #6b7a8c;
+  --color-ink-300: #93a1b2;
+  --color-ink-200: #c4cdd8;
+  --color-ink-100: #e8edf2;
+
+  --color-chalk: #c8f560;
+  --color-ember: #ff8a4c;
+  --color-sky: #6cc4ff;
+  --color-rose: #ff6b8b;
+
+  --color-score-prime: #a3e635;
+  --color-score-good: #34d399;
+  --color-score-fair: #fbbf24;
+  --color-score-poor: #fb923c;
+  --color-score-nogo: #f87171;
+
+  --animate-float: float 18s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    33% { transform: translate3d(6vw, -4vh, 0) scale(1.1); }
+    66% { transform: translate3d(-4vw, 5vh, 0) scale(0.95); }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-ink-950 text-ink-100 font-sans min-h-screen;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-chalk) 40%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-chalk);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply rounded-2xl border border-white/[0.07] bg-ink-900/60 backdrop-blur-xl;
+    box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 20px 40px -24px rgb(0 0 0 / 0.6);
+  }
+  .glass-hover {
+    @apply transition duration-300 hover:border-white/15 hover:bg-ink-800/70;
+  }
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(100deg, var(--color-chalk), #7ef0c4 45%, var(--color-sky));
+  }
+  .text-gradient-warm {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(100deg, var(--color-ember), #ffc65c 50%, var(--color-chalk));
+  }
+  .input {
+    @apply w-full rounded-xl border border-white/10 bg-ink-950/60 px-3.5 py-2.5 text-sm text-ink-100
+      placeholder:text-ink-400 transition focus:border-chalk/60 focus:outline-none focus:ring-2 focus:ring-chalk/20;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-300;
+  }
+  .skeleton {
+    @apply rounded-xl;
+    background: linear-gradient(90deg, rgb(255 255 255 / 0.03), rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.03));
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+  }
+}
+
+/* Leaflet: match the dark theme */
+.leaflet-container {
+  background: var(--color-ink-900);
+  font-family: var(--font-sans);
+}
+.leaflet-tooltip {
+  @apply rounded-lg border border-white/10 bg-ink-900/95 px-2.5 py-1.5 text-xs text-ink-100 shadow-xl;
+}
+.leaflet-tooltip-top::before {
+  border-top-color: var(--color-ink-900);
+}
+.leaflet-control-attribution {
+  background: rgb(7 11 16 / 0.7) !important;
+  color: var(--color-ink-400) !important;
+}
+.leaflet-control-attribution a {
+  color: var(--color-ink-300) !important;
+}
+.leaflet-bar a {
+  background: var(--color-ink-800) !important;
+  color: var(--color-ink-100) !important;
+  border-color: rgb(255 255 255 / 0.08) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
