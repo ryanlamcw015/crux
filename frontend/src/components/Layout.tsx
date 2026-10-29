@@ -1,6 +1,6 @@
-import { BarChart3, BookOpen, Compass, LogOut, Menu, Mountain, Rss, Search, User as UserIcon, Users, X, Handshake } from 'lucide-react'
+import { BarChart3, BookOpen, Compass, Handshake, Loader2, LogOut, Menu, Mountain, Rss, Search, User as UserIcon, Users, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate, useOutlet } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
 import { useUnits } from '../hooks/useUnits'
@@ -201,7 +201,19 @@ export function Layout() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           >
-            <ErrorBoundary resetKey={location.pathname}>{outlet}</ErrorBoundary>
+            {/* Suspense lives inside the animated wrapper: if it sat above it, loading a lazy page would hide
+                the wrapper mid-fade and leave it stuck at opacity 0. */}
+            <ErrorBoundary resetKey={location.pathname}>
+              <Suspense
+                fallback={
+                  <div className="flex min-h-[60vh] items-center justify-center">
+                    <Loader2 className="size-6 animate-spin text-chalk" />
+                  </div>
+                }
+              >
+                {outlet}
+              </Suspense>
+            </ErrorBoundary>
           </motion.div>
         </AnimatePresence>
       </main>
