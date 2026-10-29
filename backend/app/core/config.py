@@ -11,8 +11,9 @@ DEV_SECRET = "dev-only-secret-change-me-in-production-0000"
 
 
 class Settings(BaseSettings):
+    # Later files win. .env.local is where `neon init` writes DATABASE_URL.
     model_config = SettingsConfigDict(
-        env_file=(BACKEND_DIR.parent / ".env", BACKEND_DIR / ".env"),
+        env_file=(BACKEND_DIR.parent / ".env", BACKEND_DIR.parent / ".env.local", BACKEND_DIR / ".env"),
         extra="ignore",
     )
 

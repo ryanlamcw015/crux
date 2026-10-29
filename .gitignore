@@ -29,3 +29,4 @@ dist/
 *.db
 .claude/
 .vercel/
+.neon
