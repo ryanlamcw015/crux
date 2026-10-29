@@ -1,0 +1,8 @@
+# Keep deployments small and secret-free (Vercel installs deps from requirements.txt itself)
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+*.db
+.env*
+tests
