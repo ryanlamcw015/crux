@@ -4,7 +4,8 @@
 
 Crux answers the question every climber asks: *is it good out there?* It combines live weather, sun angle and rock-type drying rules into a 0–100 **Conditions Score** for 800+ crags, then helps you log the send, track your progression, and find someone to climb with.
 
-> **Live demo:** _add your Vercel URL here_. Click **Try the live demo** to explore a fully populated account, no signup needed.
+> **Live demo: [crux-web-tau.vercel.app](https://crux-web-tau.vercel.app)**. Click **Try the live demo** to explore a fully populated account, no signup needed.
+> API docs: [crux-api-psi.vercel.app/docs](https://crux-api-psi.vercel.app/docs)
 
 ## Features
 
@@ -88,7 +89,7 @@ Refresh route data from OpenBeta (optional, since the snapshot is committed): `p
 
 ## Deploy (Vercel + Neon)
 
-The repo deploys as **two Vercel projects** from one GitHub repository:
+The repo deploys as **two Vercel projects** from one GitHub repository. Every push to `main` redeploys both; each app's `vercel.json` pins its framework preset.
 
 | Project | Root directory | Environment variables |
 |---|---|---|
