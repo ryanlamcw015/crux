@@ -7,12 +7,12 @@ import type { User } from '../types'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
+// The look of each variant lives in index.css (.btn-*): glass, depth and sheen need more than utility classes.
 const VARIANTS: Record<Variant, string> = {
-  primary:
-    'bg-chalk text-ink-950 hover:bg-[#d6ff7a] shadow-[0_0_0_1px_rgba(200,245,96,.4),0_8px_30px_-8px_rgba(200,245,96,.6)]',
-  secondary: 'bg-white/[0.06] text-ink-100 border border-white/10 hover:bg-white/10 hover:border-white/20',
-  ghost: 'text-ink-200 hover:bg-white/[0.06] hover:text-white',
-  danger: 'bg-score-nogo/10 text-score-nogo border border-score-nogo/30 hover:bg-score-nogo/20',
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  ghost: 'btn-ghost',
+  danger: 'btn-danger',
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -27,7 +27,7 @@ export function Button({ variant = 'primary', size = 'md', loading, icon, classN
   return (
     <button
       className={cx(
-        'inline-flex select-none items-center justify-center rounded-xl font-semibold transition duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50',
+        'btn',
         VARIANTS[variant],
         sizes[size],
         className,
@@ -90,8 +90,8 @@ export function Chip({
       className={cx(
         'inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-medium transition',
         active
-          ? 'border-chalk/50 bg-chalk/15 text-chalk'
-          : 'border-white/10 bg-white/[0.03] text-ink-300 hover:border-white/20 hover:text-ink-100',
+          ? 'border-chalk/60 bg-chalk/20 text-chalk shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_6px_16px_-8px_rgba(255,170,90,.7)]'
+          : 'border-white/15 bg-white/[0.06] text-ink-200 shadow-[inset_0_1px_0_rgba(255,255,255,.12)] backdrop-blur-md hover:border-white/30 hover:bg-white/10 hover:text-white',
         className,
       )}
     >
@@ -189,7 +189,7 @@ export function PageHeader({ eyebrow, title, subtitle, actions }: { eyebrow?: Re
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        {eyebrow && <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-chalk/80">{eyebrow}</div>}
+        {eyebrow && <div className="eyebrow mb-2">{eyebrow}</div>}
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -299,7 +299,7 @@ export function Toast({ message }: { message: string | null }) {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="rounded-full bg-chalk px-5 py-2.5 text-sm font-semibold text-ink-950 shadow-[0_10px_40px_-10px_rgba(200,245,96,.7)]"
+            className="rounded-full bg-chalk px-5 py-2.5 text-sm font-semibold text-ink-950 shadow-[0_10px_40px_-10px_rgba(255,197,110,.7)]"
           >
             {message}
           </motion.div>
@@ -320,7 +320,7 @@ export function useToast() {
   return { message, show }
 }
 
-export function StatTile({ label, value, sub, icon, accent = '#c8f560' }: { label: string; value: ReactNode; sub?: ReactNode; icon: ReactNode; accent?: string }) {
+export function StatTile({ label, value, sub, icon, accent = '#ffc56e' }: { label: string; value: ReactNode; sub?: ReactNode; icon: ReactNode; accent?: string }) {
   return (
     <Card className="relative overflow-hidden p-5" variants={stagger.item}>
       <div className="absolute -right-6 -top-6 size-24 rounded-full blur-2xl" style={{ background: `${accent}22` }} />

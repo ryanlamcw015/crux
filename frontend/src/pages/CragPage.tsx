@@ -1,4 +1,4 @@
-import { ChevronLeft, Navigation, Plus, Search, ShieldAlert } from 'lucide-react'
+import { ChevronLeft, ExternalLink, Navigation, Plus, Search, ShieldAlert } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
@@ -8,7 +8,7 @@ import { LogAscentModal } from '../components/LogAscentModal'
 import { Button, Card, Chip, ErrorState, Skeleton, Toast, useToast } from '../components/ui'
 import { useApi } from '../hooks/useApi'
 import { useAuth } from '../hooks/useAuth'
-import { DISCIPLINE_LABEL, compass, cx } from '../lib/format'
+import { DISCIPLINE_LABEL, compass, cx, mountainProjectUrl, rockText } from '../lib/format'
 import type { Discipline, Route } from '../types'
 
 const DIRECTIONS = [0, 45, 90, 135, 180, 225, 270, 315]
@@ -28,7 +28,7 @@ function AspectPicker({ value, onChange, disabled }: { value: number | null; onC
               onClick={() => onChange(deg)}
               className={cx(
                 'absolute flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-[11px] font-bold transition',
-                active ? 'bg-chalk text-ink-950 shadow-[0_0_16px_rgba(200,245,96,.6)]' : 'text-ink-300 hover:bg-white/10 hover:text-white',
+                active ? 'bg-chalk text-ink-950 shadow-[0_0_16px_rgba(255,197,110,.6)]' : 'text-ink-300 hover:bg-white/10 hover:text-white',
                 disabled && 'cursor-not-allowed opacity-60',
               )}
               style={{ left: `${50 + Math.cos(rad) * 38}%`, top: `${50 + Math.sin(rad) * 38}%` }}
@@ -97,16 +97,22 @@ export function CragPage() {
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-chalk/80">
-            {crag.area.region} · <span className="capitalize">{crag.rock_type ?? crag.area.rock_type}</span>
+            {crag.area.region}
+            {rockText(crag.rock_type ?? crag.area.rock_type) && <> · <span className="capitalize">{rockText(crag.rock_type ?? crag.area.rock_type)}</span></>}
           </div>
           <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-4xl font-bold sm:text-5xl">
             {crag.name}
           </motion.h1>
           <div className="mt-2 text-sm text-ink-400">{crag.route_count} routes</div>
         </div>
-        <a href={`https://www.google.com/maps/dir/?api=1&destination=${crag.lat},${crag.lon}`} target="_blank" rel="noreferrer">
-          <Button variant="secondary" icon={<Navigation className="size-4" />}>Directions</Button>
-        </a>
+        <div className="flex flex-wrap gap-2">
+          <a href={mountainProjectUrl(crag.name, crag.area.name)} target="_blank" rel="noreferrer">
+            <Button variant="secondary" icon={<ExternalLink className="size-4" />}>Beta on Mountain Project</Button>
+          </a>
+          <a href={`https://www.google.com/maps/dir/?api=1&destination=${crag.lat},${crag.lon}`} target="_blank" rel="noreferrer">
+            <Button variant="secondary" icon={<Navigation className="size-4" />}>Directions</Button>
+          </a>
+        </div>
       </div>
 
       <ConditionsPanel forecast={crag.forecast} aside={<AspectPicker value={crag.aspect_deg} onChange={setAspect} disabled={!user} />} />

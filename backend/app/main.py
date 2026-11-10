@@ -2,9 +2,12 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import func, select
 
+from app.api.deps import DB
 from app.api.routes import auth, logbook, partners, places, social
 from app.core.config import get_settings
+from app.models import Area, Crag
 from app.services.conditions import ROCK_RULES
 from app.services.grades import grade_options
 
@@ -48,3 +51,10 @@ def meta():
         "styles": ["onsight", "flash", "redpoint", "send", "repeat", "attempt"],
         "disciplines": ["sport", "trad", "boulder", "tr"],
     }
+
+
+@app.get("/api/stats", tags=["meta"])
+def stats(db: DB):
+    """Database totals for the landing page. Route totals come from the per-area counts, which is cheap."""
+    areas, routes = db.execute(select(func.count(Area.id), func.coalesce(func.sum(Area.route_count), 0))).one()
+    return {"areas": areas, "crags": db.scalar(select(func.count(Crag.id))), "routes": routes}

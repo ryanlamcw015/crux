@@ -59,8 +59,26 @@ ROCK_RULES: dict[str, dict[str, Any]] = {
         "soft_when_wet": False,
         "note": "Dries quickly; lichen-covered slabs stay slick longer.",
     },
+    "schist": {
+        "label": "Schist",
+        "dry_hours": 6,
+        "soft_when_wet": False,
+        "note": "Dries reasonably fast, but polished holds stay greasy in humid air.",
+    },
+    "syenite": {
+        "label": "Syenite porphyry",
+        "dry_hours": 5,
+        "soft_when_wet": False,
+        "note": "Hard igneous rock with iron-rich patina. Dries fast; huecos can hold puddles.",
+    },
+    "unknown": {
+        "label": "Rock type not set",
+        "dry_hours": 12,
+        "soft_when_wet": False,
+        "note": "No rock type on file yet, so a general drying rule is used. Check local ethics after rain.",
+    },
 }
-DEFAULT_ROCK = "granite"
+DEFAULT_ROCK = "unknown"
 
 IDEAL_TEMP = (7.0, 13.0)  # °C, best friction range for rock temperature
 

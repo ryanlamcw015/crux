@@ -98,7 +98,7 @@ export function AnimatedBackground() {
         const major = li % 3 === 1
         const warm = level > 0
         ctx.strokeStyle = warm
-          ? `rgba(200, 245, 96, ${major ? 0.24 : 0.1})`
+          ? `rgba(255, 197, 110, ${major ? 0.24 : 0.1})`
           : `rgba(108, 196, 255, ${major ? 0.2 : 0.085})`
         ctx.lineWidth = major ? 1.2 : 0.8
         ctx.beginPath()

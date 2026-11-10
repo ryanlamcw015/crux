@@ -6,14 +6,13 @@
 Demo climbers are fictional. Their logbooks reference real routes from the snapshot.
 """
 
-import json
 import random
 import secrets
 import sys
 from bisect import bisect_left, bisect_right
 from datetime import UTC, date, datetime, time, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, insert, select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import get_settings
@@ -31,7 +30,7 @@ from app.models import (
     Route,
     User,
 )
-from app.pipeline.openbeta import SNAPSHOT
+from app.pipeline.openbeta import load_snapshot
 from app.services import grades
 
 GYMS = [
@@ -92,42 +91,61 @@ DEMO_PEOPLE = [
 
 
 def load_places(db: Session) -> None:
-    data = json.loads(SNAPSHOT.read_text())
-    known_areas = set(db.scalars(select(Area.openbeta_uuid)))
-    for dest in data:
-        if dest["uuid"] in known_areas:
-            continue
-        crags = dest["crags"]
-        area = Area(
-            openbeta_uuid=dest["uuid"],
-            name=dest["name"],
-            region=dest["region"],
-            lat=dest["lat"],
-            lon=dest["lon"],
-            rock_type=dest["rock_type"],
-            description=dest["description"],
-            route_count=sum(len(c["routes"]) for c in crags),
-        )
-        for c in crags:
-            crag = Crag(
-                openbeta_uuid=c["uuid"], name=c["name"], lat=c["lat"], lon=c["lon"], route_count=len(c["routes"])
-            )
-            crag.routes = [
-                Route(
-                    openbeta_uuid=r["uuid"],
-                    name=r["name"],
-                    grade=r["grade"],
-                    grade_system=r["grade_system"],
-                    grade_index=r["grade_index"],
-                    discipline=r["discipline"],
-                    safety=r["safety"],
-                )
-                for r in c["routes"]
-            ]
-            area.crags.append(crag)
-        db.add(area)
+    """Sync the snapshot into the database. Safe to re-run: existing rows keep their ids (so logged ascents
+    stay linked) and only missing areas, crags and routes are inserted."""
+    data = load_snapshot()
+    areas = {a.openbeta_uuid: a for a in db.scalars(select(Area))}
+    crag_ids: dict[str, int] = dict(db.execute(select(Crag.openbeta_uuid, Crag.id)).all())
+    known_routes = set(db.scalars(select(Route.openbeta_uuid)))
+    added = {"areas": 0, "crags": 0, "routes": 0}
+
+    for start in range(0, len(data), 200):
+        route_rows: list[dict] = []
+        fresh: list[tuple[Crag, list[dict]]] = []
+        for dest in data[start : start + 200]:
+            area = areas.get(dest["uuid"])
+            if area is None:
+                area = Area(openbeta_uuid=dest["uuid"], description=dest["description"])
+                db.add(area)
+                areas[dest["uuid"]] = area
+                added["areas"] += 1
+            area.name, area.region, area.rock_type = dest["name"], dest["region"], dest["rock_type"]
+            area.lat, area.lon = dest["lat"], dest["lon"]
+            area.route_count = sum(len(c["routes"]) for c in dest["crags"])
+            db.flush()  # assigns area.id
+            for c in dest["crags"]:
+                crag_id = crag_ids.get(c["uuid"])
+                if crag_id is None:
+                    crag = Crag(openbeta_uuid=c["uuid"], area_id=area.id, name=c["name"], lat=c["lat"], lon=c["lon"])
+                    crag.route_count, crag.rock_type = len(c["routes"]), c.get("rock_type")
+                    db.add(crag)
+                    fresh.append((crag, c["routes"]))
+                    added["crags"] += 1
+                else:
+                    # An existing crag may belong to a different area now that areas are cut differently.
+                    db.execute(
+                        update(Crag)
+                        .where(Crag.id == crag_id)
+                        .values(area_id=area.id, route_count=len(c["routes"]), rock_type=c.get("rock_type"))
+                    )
+                    route_rows += [{**r, "crag_id": crag_id} for r in c["routes"] if r["uuid"] not in known_routes]
+        db.flush()  # assigns ids to the new crags
+        for crag, routes in fresh:
+            crag_ids[crag.openbeta_uuid] = crag.id
+            route_rows += [{**r, "crag_id": crag.id} for r in routes if r["uuid"] not in known_routes]
+        rows = [{("openbeta_uuid" if k == "uuid" else k): v for k, v in r.items()} for r in route_rows]
+        known_routes.update(r["openbeta_uuid"] for r in rows)
+        for i in range(0, len(rows), 5000):
+            db.execute(insert(Route), rows[i : i + 5000])  # one multi-row INSERT per chunk
+        added["routes"] += len(rows)
         db.commit()
-        print(f"  loaded {dest['name']}: {len(crags)} crags, {area.route_count} routes")
+        print(f"  synced {min(start + 200, len(data))}/{len(data)} areas", flush=True)
+
+    # Areas from an older, differently-cut snapshot that ended up with no crags.
+    empty = select(Area.id).where(~select(Crag.id).where(Crag.area_id == Area.id).exists())
+    db.execute(delete(Area).where(Area.id.in_(empty)), execution_options={"synchronize_session": False})
+    db.commit()
+    print(f"  added {added['areas']} areas, {added['crags']} crags, {added['routes']} routes")
 
 
 def _pick_grade(rng: random.Random, top: int, step: int) -> int:
@@ -259,7 +277,8 @@ def seed_demo(db: Session, reset: bool) -> None:
 
     rng = random.Random(42)
     today = date.today()
-    areas = {a.name: a for a in db.scalars(select(Area))}
+    # Several states have an area called e.g. "Red Rock": the demo climbers live at the biggest one.
+    areas = {a.name: a for a in db.scalars(select(Area).order_by(Area.route_count))}
     routes = db.scalars(
         select(Route).options(selectinload(Route.crag).selectinload(Crag.area)).order_by(Route.grade_index)
     ).all()

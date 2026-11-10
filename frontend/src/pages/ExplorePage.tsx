@@ -1,7 +1,7 @@
 import { CloudRain, Droplets, LocateFixed, MapPin, Search, Thermometer, X } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { api } from '../api/endpoints'
 import { AreaMap } from '../components/AreaMap'
 import { Button, Card, Chip, EmptyState, ErrorState, PageHeader, ScorePill, Segmented, Skeleton, stagger } from '../components/ui'
@@ -9,7 +9,7 @@ import { useApi } from '../hooks/useApi'
 import { useGeolocation } from '../hooks/useGeolocation'
 import { useMeta } from '../hooks/useMeta'
 import { useUnits } from '../hooks/useUnits'
-import { cx } from '../lib/format'
+import { cx, dotJoin, rockText } from '../lib/format'
 
 type Sort = 'score' | 'distance' | 'name'
 
@@ -18,27 +18,37 @@ export function ExplorePage() {
   const navigate = useNavigate()
   const { temp, distance } = useUnits()
   const geo = useGeolocation()
-  const [q, setQ] = useState('')
+  const [params, setParams] = useSearchParams()
+  const [q, setQ] = useState(params.get('q') ?? '')
+  const [debounced, setDebounced] = useState(q.trim())
   const [rock, setRock] = useState<string | null>(null)
   const [sort, setSort] = useState<Sort>('score')
   const [hovered, setHovered] = useState<number | null>(null)
 
+  // Search runs on the server (there are thousands of areas), so wait for typing to pause before asking.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const next = q.trim()
+      setDebounced(next)
+      setParams(next ? { q: next } : {}, { replace: true })
+    }, 300)
+    return () => clearTimeout(t)
+  }, [q, setParams])
+
+  const { data: stats } = useApi(() => api.stats(), [])
   const { data: areas, error, loading, reload } = useApi(
     () =>
       api.areas({
+        q: debounced || undefined,
         rock_type: rock ?? undefined,
         lat: geo.coords?.lat,
         lon: geo.coords?.lon,
-        radius_km: geo.coords ? 1500 : undefined,
+        radius_km: geo.coords ? 800 : undefined,
         sort: sort === 'distance' && !geo.coords ? 'score' : sort,
       }),
-    [rock, sort, geo.coords],
+    [debounced, rock, sort, geo.coords],
   )
-
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase()
-    return (areas ?? []).filter((a) => !needle || `${a.name} ${a.region}`.toLowerCase().includes(needle))
-  }, [areas, q])
+  const filtered = areas ?? []
 
   const points = filtered.map((a) => ({
     id: a.id,
@@ -46,7 +56,7 @@ export function ExplorePage() {
     lat: a.lat,
     lon: a.lon,
     score: a.conditions?.score ?? null,
-    subtitle: `${a.region} · ${a.rock_type}`,
+    subtitle: dotJoin(a.region, rockText(a.rock_type)),
   }))
 
   return (
@@ -54,13 +64,13 @@ export function ExplorePage() {
       <PageHeader
         eyebrow="Explore"
         title="Where should you climb?"
-        subtitle="Every destination ranked by its live Conditions Score. Hover the list to find it on the map, and click through for the 72-hour outlook."
+        subtitle={`${stats ? stats.areas.toLocaleString() : 'Thousands of'} climbing areas across the US and Canada, each with a live Conditions Score. Search by area, crag or state.`}
       />
 
       <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-3 size-4 text-ink-400" />
-          <input className="input pl-9" placeholder="Search areas or states…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="input pl-9" placeholder="Search areas, crags or states… try “Hueco Tanks”" aria-label="Search climbing areas" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Segmented
@@ -77,7 +87,7 @@ export function ExplorePage() {
           />
           {geo.coords ? (
             <Button variant="secondary" size="sm" icon={<X className="size-3.5" />} onClick={() => { geo.clear(); setSort('score') }}>
-              Within 1,500 km
+              Near me
             </Button>
           ) : (
             <Button variant="secondary" size="sm" loading={geo.locating} icon={<LocateFixed className="size-3.5" />} onClick={geo.locate}>
@@ -91,7 +101,7 @@ export function ExplorePage() {
       <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
         <Chip active={rock === null} onClick={() => setRock(null)}>All rock</Chip>
         {meta &&
-          Object.entries(meta.rock_types).map(([key, r]) => (
+          Object.entries(meta.rock_types).filter(([key]) => key !== 'unknown').map(([key, r]) => (
             <Chip key={key} active={rock === key} onClick={() => setRock(rock === key ? null : key)}>
               {r.label}
             </Chip>
@@ -108,11 +118,11 @@ export function ExplorePage() {
           )}
           {areas && filtered.length === 0 && (
             <Card>
-              <EmptyState icon={<MapPin className="size-6" />} title="No areas match" body="Try a different search or rock type." />
+              <EmptyState icon={<MapPin className="size-6" />} title="No areas match" body="Try a different spelling, a state name, or clear the rock type filter." />
             </Card>
           )}
           <motion.div
-            key={`${rock}-${sort}-${geo.coords?.lat}`}
+            key={`${debounced}-${rock}-${sort}-${geo.coords?.lat}`}
             className={cx('space-y-3 transition-opacity', loading && areas && 'opacity-60')}
             variants={stagger.container}
             initial="hidden"
@@ -132,8 +142,7 @@ export function ExplorePage() {
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold">{a.name}</div>
                     <div className="mt-0.5 truncate text-xs capitalize text-ink-400">
-                      {a.region} · {a.rock_type} · {a.route_count.toLocaleString()} routes
-                      {a.distance_km !== null && ` · ${distance(a.distance_km)}`}
+                      {dotJoin(a.region, rockText(a.rock_type), `${a.route_count.toLocaleString()} routes`, a.distance_km !== null && distance(a.distance_km))}
                     </div>
                     {a.conditions && (
                       <div className="mt-2 flex gap-3 text-xs text-ink-300">
@@ -148,6 +157,15 @@ export function ExplorePage() {
               </Card>
             ))}
           </motion.div>
+          {areas && filtered.length > 0 && (
+            <p className="mt-4 text-center text-xs text-ink-400">
+              {debounced
+                ? `${filtered.length}${filtered.length === 60 ? '+' : ''} ${filtered.length === 1 ? 'match' : 'matches'} for “${debounced}”`
+                : geo.coords
+                  ? `The ${filtered.length} areas closest to you`
+                  : `Showing the ${filtered.length} biggest areas. Search to find any of ${stats?.areas.toLocaleString() ?? 'the rest'}.`}
+            </p>
+          )}
         </div>
         <div className="order-1 lg:order-2">
           <Card className="sticky top-24 overflow-hidden p-0">

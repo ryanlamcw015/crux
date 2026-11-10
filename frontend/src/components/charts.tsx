@@ -79,7 +79,7 @@ export function SendTrend({ rows, system }: { rows: TrendRow[]; system: GradeSys
             domain={[lo, hi]}
             tickLine={false}
             axisLine={false}
-            tick={{ ...AXIS, fill: '#c8f560' }}
+            tick={{ ...AXIS, fill: '#ffc56e' }}
             width={52}
             tickFormatter={(v: number) => gradeLabel(system, v)}
           />
@@ -100,7 +100,7 @@ export function SendTrend({ rows, system }: { rows: TrendRow[]; system: GradeSys
             }}
           />
           <Bar yAxisId="sends" dataKey="sends" fill="url(#sendsFill)" radius={[6, 6, 0, 0]} animationDuration={900} />
-          <Line yAxisId="grade" type="monotone" dataKey="grade" stroke="#c8f560" strokeWidth={2.5} dot={{ r: 3, fill: '#c8f560' }} connectNulls animationDuration={1200} />
+          <Line yAxisId="grade" type="monotone" dataKey="grade" stroke="#ffc56e" strokeWidth={2.5} dot={{ r: 3, fill: '#ffc56e' }} connectNulls animationDuration={1200} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>

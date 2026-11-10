@@ -65,8 +65,8 @@ export function ForecastChart({ hours }: { hours: HourScore[] }) {
         <ComposedChart data={data} margin={{ top: 10, right: 4, left: -18, bottom: 0 }}>
           <defs>
             <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#c8f560" stopOpacity={0.45} />
-              <stop offset="100%" stopColor="#c8f560" stopOpacity={0} />
+              <stop offset="0%" stopColor="#ffc56e" stopOpacity={0.45} />
+              <stop offset="100%" stopColor="#ffc56e" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -87,12 +87,12 @@ export function ForecastChart({ hours }: { hours: HourScore[] }) {
             yAxisId="score"
             type="monotone"
             dataKey="nightScore"
-            stroke="rgba(200,245,96,0.25)"
+            stroke="rgba(255,197,110,0.25)"
             strokeDasharray="3 4"
             fill="none"
             isAnimationActive={false}
           />
-          <Area yAxisId="score" type="monotone" dataKey="dayScore" stroke="#c8f560" strokeWidth={2} fill="url(#scoreFill)" connectNulls={false} />
+          <Area yAxisId="score" type="monotone" dataKey="dayScore" stroke="#ffc56e" strokeWidth={2} fill="url(#scoreFill)" connectNulls={false} />
           <Line yAxisId="temp" type="monotone" dataKey="temp" stroke="#ff8a4c" strokeWidth={1.5} dot={false} strokeOpacity={0.8} />
         </ComposedChart>
       </ResponsiveContainer>

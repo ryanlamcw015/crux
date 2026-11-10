@@ -12,7 +12,7 @@ Crux answers the question every climber asks: *is it good out there?* It combine
 | | |
 |---|---|
 | **Conditions Score** | Hour-by-hour 0–100 rating per crag for the next 72 hours, with plain-language reasons ("Prime friction temps", "Sandstone still wet"), best climbing windows and a daily outlook. |
-| **Route finder & map** | ~17,000 real routes and boulder problems from OpenBeta across 22 destinations. Filter by grade, style and area on an interactive map. |
+| **Route finder & map** | ~220,000 real routes and boulder problems from OpenBeta across 5,000+ areas in every US state and Canadian province. Filter by grade, style and area on an interactive map. |
 | **Logbook** | Log outdoor sends or gym climbs: onsight / flash / redpoint / attempts, star ratings and notes. |
 | **Progression analytics** | Grade pyramids (by send style), monthly send trends with hardest-grade line, style breakdown, weekly streaks and personal bests. |
 | **Friends & activity feed** | Friend requests, a feed of your crew's sends and partner posts, and kudos. |
@@ -68,7 +68,7 @@ cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 alembic upgrade head            # create tables
-python -m app.pipeline.seed     # load 17k routes + demo climbers
+python -m app.pipeline.seed     # load 220k routes + demo climbers
 uvicorn app.main:app --reload
 ```
 

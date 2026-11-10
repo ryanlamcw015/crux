@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { api } from '../api/endpoints'
+import { AreaPicker } from '../components/AreaPicker'
 import { LogAscentModal } from '../components/LogAscentModal'
 import { Button, Card, Chip, EmptyState, ErrorState, PageHeader, Skeleton, Toast, useToast } from '../components/ui'
 import { useApi } from '../hooks/useApi'
@@ -35,7 +36,7 @@ export function RoutesPage() {
     return () => clearTimeout(t)
   }, [q])
 
-  const { data: areas } = useApi(() => api.areas({ sort: 'name' }), [])
+  const { data: stats } = useApi(() => api.stats(), [])
   const query = {
     q: debounced || undefined,
     area_id: areaId,
@@ -67,31 +68,24 @@ export function RoutesPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <PageHeader eyebrow="Route finder" title="Find your next project" subtitle="Search 17,000 routes and problems from OpenBeta by name, area, style and grade." />
+      <PageHeader eyebrow="Route finder" title="Find your next project" subtitle={`Search ${stats ? stats.routes.toLocaleString() : ""} routes and boulder problems across the US and Canada by name, area, style and grade.`} />
 
       <Card className="mb-6 space-y-4 p-5">
-        <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+        <div className="grid gap-3 md:grid-cols-[1fr_280px]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-3 size-4 text-ink-400" />
             <input className="input pl-9" placeholder="Route name…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <select
-            className="input"
-            value={areaId ?? ''}
-            onChange={(e) => {
+          <AreaPicker
+            value={areaId ?? null}
+            placeholder="Any area"
+            onChange={(id) => {
               const next = new URLSearchParams(params)
-              if (e.target.value) next.set('area_id', e.target.value)
+              if (id) next.set('area_id', String(id))
               else next.delete('area_id')
               setParams(next, { replace: true })
             }}
-          >
-            <option value="">All areas</option>
-            {areas?.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Chip active={!discipline} onClick={() => { setDiscipline(null); setGradeMin(''); setGradeMax('') }}>All styles</Chip>

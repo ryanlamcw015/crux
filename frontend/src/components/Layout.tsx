@@ -24,7 +24,7 @@ const MOBILE_TABS = ['/explore', '/logbook', '/progress', '/feed', '/partners']
 export function Logo() {
   return (
     <Link to="/" className="group flex items-center gap-2.5">
-      <span className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-ember to-chalk shadow-[0_0_24px_-4px_rgba(200,245,96,.6)] transition group-hover:rotate-[-6deg] group-hover:scale-105">
+      <span className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-ember to-chalk shadow-[0_0_24px_-4px_rgba(255,197,110,.6)] transition group-hover:rotate-[-6deg] group-hover:scale-105">
         <Mountain className="size-5 text-ink-950" strokeWidth={2.5} />
       </span>
       <span className="font-display text-xl font-bold tracking-tight">Crux</span>

@@ -14,6 +14,7 @@ import type {
   PartnerPostInput,
   Profile,
   Route,
+  Stats,
   User,
 } from '../types'
 import { request } from './client'
@@ -35,7 +36,8 @@ export const api = {
 
   // places
   meta: () => request<Meta>('GET', '/api/meta'),
-  areas: (query: { q?: string; rock_type?: string; lat?: number; lon?: number; radius_km?: number; sort?: string } = {}) =>
+  stats: () => request<Stats>('GET', '/api/stats'),
+  areas: (query: { q?: string; rock_type?: string; lat?: number; lon?: number; radius_km?: number; sort?: string; limit?: number; id?: number } = {}) =>
     request<AreaSummary[]>('GET', '/api/areas', { query }),
   area: (id: number) => request<AreaDetail>('GET', `/api/areas/${id}`),
   crag: (id: number) => request<CragDetail>('GET', `/api/crags/${id}`),

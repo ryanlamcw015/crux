@@ -16,7 +16,9 @@ export function ProgressPage() {
   const [system, setSystem] = useState<'route' | 'boulder'>('route')
   const { data: stats, error, reload } = useApi(() => api.analytics(), [])
   const { data: areas } = useApi(() => api.areas({ sort: 'score' }), [])
-  const home = areas?.find((a) => a.id === user?.home_area?.id)
+  const homeId = user?.home_area?.id
+  const { data: homeAreas } = useApi(() => (homeId ? api.areas({ id: homeId }) : Promise.resolve([])), [homeId])
+  const home = homeAreas?.[0]
   const best = areas?.[0]
 
   if (error) return <div className="mx-auto max-w-7xl px-4 py-10"><ErrorState message={error} onRetry={reload} /></div>

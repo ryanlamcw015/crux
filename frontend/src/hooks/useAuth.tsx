@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { tokenStore } from '../api/client'
+import { ApiError, tokenStore } from '../api/client'
 import { api } from '../api/endpoints'
 import type { Me } from '../types'
 
@@ -21,11 +21,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!tokenStore.get()) return
-    api
-      .me()
-      .then(setUser)
-      .catch(() => tokenStore.clear())
-      .finally(() => setLoading(false))
+    let cancelled = false
+    // Restore the session. Only a 401 means the token is bad (the API client clears it). A network blip or a
+    // slow serverless cold start must not log anyone out, so those get a few retries and the token is kept.
+    const restore = async () => {
+      for (let attempt = 0; attempt < 3 && !cancelled; attempt++) {
+        try {
+          const me = await api.me()
+          if (!cancelled) setUser(me)
+          break
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 401) break
+          await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)))
+        }
+      }
+      if (!cancelled) setLoading(false)
+    }
+    void restore()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {

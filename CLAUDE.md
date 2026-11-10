@@ -5,7 +5,7 @@ Guidance for Claude when working in this repository.
 ## Project
 
 **Crux** is a data-driven climbing app: a 0–100 Conditions Score per crag (weather + sun/shade + rock-type
-drying rules), a route finder over ~17k OpenBeta routes, a logbook, progression analytics (grade pyramid,
+drying rules), a route finder over ~220k OpenBeta routes (every US state and Canadian province), a logbook, progression analytics (grade pyramid,
 send trends), friends + activity feed, and a partner finder.
 
 Status: v1 feature-complete; deploys to Vercel (two projects: `backend/` and `frontend/`) with Neon Postgres.
@@ -37,13 +37,14 @@ backend/
     models/       SQLAlchemy tables: places (Area > Crag > Route, WeatherSnapshot), users (User, Ascent, Friendship), social
     schemas/      Pydantic request/response models
     services/     Business logic: conditions (score model), sun, weather (Open-Meteo cache), grades, analytics, geo, places, social
-    pipeline/     openbeta.py (import → data/openbeta_snapshot.json), destinations.py (curated rock types), seed.py
+    pipeline/     openbeta.py (import → data/openbeta_snapshot.json.gz; raw downloads cached in data/.cache),
+                  destinations.py (curated rock types + ROCK_HINTS), seed.py (syncs the snapshot into the DB)
   alembic/        Migrations (0001 adds PostGIS GiST indexes on Postgres only)
   tests/          pytest; conftest stubs Open-Meteo and uses a temp SQLite DB
 frontend/
   src/
     api/          client.ts (fetch + token + errors), endpoints.ts (typed API calls)
-    components/   ui.tsx (Button, Card, Modal, Chip…), AnimatedBackground, ScoreRing, ConditionsPanel, charts, AreaMap, LogAscentModal, Layout
+    components/   ui.tsx (Button, Card, Modal, Chip…), ElCapScene (three.js landing hero), AreaPicker, AnimatedBackground, ScoreRing, ConditionsPanel, charts, AreaMap, LogAscentModal, Layout
     hooks/        useAuth (context), useApi (data loading), useGeolocation, useUnits (°F/°C), useMeta
     lib/format.ts Score colors, grade labels, date helpers
     pages/        One file per route (see App.tsx; pages are lazy-loaded)
@@ -62,6 +63,9 @@ docs/             Design notes and decisions
 - Frontend types in `frontend/src/types/` should match backend Pydantic schemas.
 - Python: type hints everywhere; ruff for lint + format (line length 120).
 - TypeScript: `strict` mode on; avoid `any`. Respect `prefers-reduced-motion` in animations.
+- There are thousands of areas: never load them all. List endpoints take `limit`; pickers use `AreaPicker` (type-ahead).
+- Local dev must not touch production: `.env.local` holds the Neon URL, so run the API and seed with
+  `DATABASE_URL=sqlite:///$PWD/crux.db` unless you mean to change live data.
 
 ## Commands
 
@@ -70,7 +74,7 @@ docs/             Design notes and decisions
 pip install -r requirements-dev.txt
 alembic upgrade head                 # create/upgrade tables
 python -m app.pipeline.seed          # load routes + demo users (--reset-demo to regenerate)
-python -m app.pipeline.openbeta      # re-import routes from OpenBeta into the snapshot
+python -m app.pipeline.openbeta      # re-import routes from OpenBeta into the snapshot (--refresh to re-download)
 uvicorn app.main:app --reload        # http://localhost:8000, docs at /docs
 pytest                               # tests
 ruff check . && ruff format .        # lint + format

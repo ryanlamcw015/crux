@@ -141,3 +141,30 @@ def test_partner_finder(client):
     assert replied["replies"][0]["user"]["username"] == "bob"
     assert client.post(f"/api/partners/{post['id']}/close", headers=bob).status_code == 404
     assert client.post(f"/api/partners/{post['id']}/close", headers=alice).json()["status"] == "closed"
+
+
+def test_area_search_matches_crags_and_limits(client):
+    by_crag = client.get("/api/areas", params={"q": "sunny wall"}).json()
+    assert [a["name"] for a in by_crag] == ["Test Crag Area"]
+    assert len(client.get("/api/areas", params={"limit": 1}).json()) == 1
+    area_id = by_crag[0]["id"]
+    assert [a["id"] for a in client.get("/api/areas", params={"id": area_id}).json()] == [area_id]
+
+
+def test_stats_counts_the_database(client):
+    assert client.get("/api/stats").json() == {"areas": 2, "crags": 1, "routes": 2}
+
+
+def test_stale_weather_for_other_areas_is_pruned(client):
+    from datetime import UTC, datetime, timedelta
+
+    from app.db.session import SessionLocal
+    from app.models import Area, WeatherSnapshot
+
+    with SessionLocal() as db:
+        far = db.query(Area).filter_by(name="Far Away").one()
+        db.add(WeatherSnapshot(area_id=far.id, fetched_at=datetime.now(UTC) - timedelta(days=3), payload={}))
+        db.commit()
+    assert client.get("/api/areas", params={"q": "Test Crag"}).status_code == 200  # fetches fresh weather for one area
+    with SessionLocal() as db:
+        assert db.query(WeatherSnapshot).count() == 1  # the 3-day-old forecast for the other area is gone

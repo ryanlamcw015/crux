@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -56,6 +56,16 @@ def get_forecasts(db: Session, areas: list[Area]) -> dict[int, dict[str, Any]]:
         for s in db.scalars(select(WeatherSnapshot).where(WeatherSnapshot.area_id.in_([a.id for a in areas])))
     }
     stale = [a for a in areas if not _is_fresh(snapshots.get(a.id), now)]
+    if stale:
+        # With thousands of areas the cache would grow without bound, so drop forecasts nobody has
+        # asked for in a day whenever we're about to write new ones anyway.
+        db.execute(
+            delete(WeatherSnapshot)
+            .where(WeatherSnapshot.fetched_at < now - timedelta(days=1))
+            .where(WeatherSnapshot.area_id.not_in([a.id for a in areas])),
+            # Run it as plain SQL: no need to also evaluate the filter against objects in this session.
+            execution_options={"synchronize_session": False},
+        )
 
     for start in range(0, len(stale), 50):  # Open-Meteo accepts many coordinates per request
         chunk = stale[start : start + 50]

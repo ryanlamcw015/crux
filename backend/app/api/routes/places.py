@@ -19,8 +19,10 @@ def list_areas(
     lon: float | None = Query(default=None, ge=-180, le=180),
     radius_km: float = Query(default=500, gt=0, le=5000),
     sort: Literal["score", "distance", "name"] = "score",
+    limit: int = Query(default=60, ge=1, le=200),
+    id: int | None = None,
 ):
-    return places.list_areas(db, q, rock_type, lat, lon, radius_km, sort)
+    return places.list_areas(db, q, rock_type, lat, lon, radius_km, sort, limit, id)
 
 
 @router.get("/areas/{area_id}", response_model=AreaDetail)

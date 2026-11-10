@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { api } from '../api/endpoints'
+import { AreaPicker } from '../components/AreaPicker'
 import { Avatar, Badge, Button, Card, Chip, EmptyState, ErrorState, Modal, PageHeader, Segmented, Skeleton, Toast, useToast } from '../components/ui'
 import { useApi } from '../hooks/useApi'
 import { useAuth } from '../hooks/useAuth'
@@ -14,7 +15,6 @@ import type { Discipline, PartnerPost, PartnerPostInput } from '../types'
 const DISCIPLINES: Discipline[] = ['sport', 'trad', 'boulder', 'tr']
 
 function NewPostModal({ open, onClose, onCreated, defaultAreaId }: { open: boolean; onClose: () => void; onCreated: (p: PartnerPost) => void; defaultAreaId?: number }) {
-  const { data: areas } = useApi(() => api.areas({ sort: 'name' }), [])
   const geo = useGeolocation()
   const [form, setForm] = useState<PartnerPostInput>({
     setting: defaultAreaId ? 'outdoor' : 'gym',
@@ -62,10 +62,7 @@ function NewPostModal({ open, onClose, onCreated, defaultAreaId }: { open: boole
         {form.setting === 'outdoor' ? (
           <div>
             <label className="label">Area</label>
-            <select className="input" value={form.area_id ?? ''} onChange={(e) => set('area_id', e.target.value ? Number(e.target.value) : null)} required>
-              <option value="">Choose an area</option>
-              {areas?.map((a) => <option key={a.id} value={a.id}>{a.name}, {a.region}</option>)}
-            </select>
+            <AreaPicker value={form.area_id ?? null} onChange={(id) => set('area_id', id)} placeholder="Search for an area" required />
           </div>
         ) : (
           <div>
@@ -148,7 +145,7 @@ function PostCard({ post, onChange, mine }: { post: PartnerPost; onChange: (p: P
             <div className="flex flex-wrap items-center gap-2">
               <Link to={`/u/${post.user.username}`} className="font-semibold hover:text-chalk">{post.user.display_name}</Link>
               <Badge color={post.setting === 'gym' ? '#6cc4ff' : '#34d399'}>{post.setting === 'gym' ? 'Gym' : 'Outdoor'}</Badge>
-              {mine && <Badge color="#c8f560">Your post</Badge>}
+              {mine && <Badge color="#ffc56e">Your post</Badge>}
               <span className="text-xs text-ink-400">{timeAgo(post.created_at)}</span>
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-lg font-semibold">

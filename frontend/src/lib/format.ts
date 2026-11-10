@@ -28,7 +28,7 @@ export function gradeLabel(system: GradeSystem, index: number): string {
 }
 
 export const STYLE_META: Record<Style, { label: string; color: string; short: string }> = {
-  onsight: { label: 'Onsight', color: '#c8f560', short: 'OS' },
+  onsight: { label: 'Onsight', color: '#ffc56e', short: 'OS' },
   flash: { label: 'Flash', color: '#6cc4ff', short: 'FL' },
   redpoint: { label: 'Redpoint', color: '#ff8a4c', short: 'RP' },
   send: { label: 'Send', color: '#ff8a4c', short: 'S' },
@@ -117,4 +117,19 @@ export function timeAgo(iso: string): string {
 
 export function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(' ')
+}
+
+/** Rock type for display. Areas with no type on file show nothing rather than "unknown". */
+export function rockText(rock: string | null | undefined): string | null {
+  return !rock || rock === 'unknown' ? null : rock
+}
+
+/** "Texas · syenite · 638 routes": joins the parts that exist. */
+export function dotJoin(...parts: (string | null | undefined | false)[]): string {
+  return parts.filter(Boolean).join(' · ')
+}
+
+/** Mountain Project has no public API, so Crux links out to its search for photos, beta and comments. */
+export function mountainProjectUrl(...names: string[]): string {
+  return `https://www.mountainproject.com/search?q=${encodeURIComponent(names.join(' '))}`
 }

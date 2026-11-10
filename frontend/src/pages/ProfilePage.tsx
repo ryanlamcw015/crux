@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { useState, type FormEvent } from 'react'
 import { useParams } from 'react-router'
 import { api } from '../api/endpoints'
+import { AreaPicker } from '../components/AreaPicker'
 import { GradePyramid } from '../components/charts'
 import { Avatar, Badge, Button, Card, ErrorState, Modal, Segmented, Skeleton, StatTile, stagger } from '../components/ui'
 import { useApi } from '../hooks/useApi'
@@ -11,7 +12,6 @@ import { STYLE_META, formatDay } from '../lib/format'
 import type { Me } from '../types'
 
 function EditProfileModal({ open, onClose, me, onSaved }: { open: boolean; onClose: () => void; me: Me; onSaved: (m: Me) => void }) {
-  const { data: areas } = useApi(() => api.areas({ sort: 'name' }), [])
   const [displayName, setDisplayName] = useState(me.display_name)
   const [bio, setBio] = useState(me.bio)
   const [homeArea, setHomeArea] = useState<number | null>(me.home_area?.id ?? null)
@@ -40,7 +40,7 @@ function EditProfileModal({ open, onClose, me, onSaved }: { open: boolean; onClo
           <Avatar user={{ ...me, display_name: displayName || me.display_name, avatar_hue: hue }} size={64} link={false} />
           <div className="flex-1">
             <label className="label">Avatar color</label>
-            <input type="range" min={0} max={359} value={hue} onChange={(e) => setHue(Number(e.target.value))} className="w-full accent-[#c8f560]" />
+            <input type="range" min={0} max={359} value={hue} onChange={(e) => setHue(Number(e.target.value))} className="w-full accent-[#ffc56e]" />
           </div>
         </div>
         <div>
@@ -49,10 +49,7 @@ function EditProfileModal({ open, onClose, me, onSaved }: { open: boolean; onClo
         </div>
         <div>
           <label className="label">Home area</label>
-          <select className="input" value={homeArea ?? ''} onChange={(e) => setHomeArea(e.target.value ? Number(e.target.value) : null)}>
-            <option value="">None</option>
-            {areas?.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
+          <AreaPicker value={homeArea} onChange={setHomeArea} placeholder="Search for your home area" />
         </div>
         <div>
           <label className="label">Bio</label>

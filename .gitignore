@@ -30,3 +30,6 @@ dist/
 .claude/
 .vercel/
 .neon
+
+# Raw OpenBeta downloads (rebuilt by the importer)
+backend/data/.cache/

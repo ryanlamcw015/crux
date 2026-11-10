@@ -48,20 +48,39 @@ def list_areas(
     lon: float | None,
     radius_km: float,
     sort: str,
+    limit: int = 60,
+    area_id: int | None = None,
 ) -> list[dict[str, Any]]:
+    """Up to `limit` areas. There are thousands, so pick the page first and only then fetch weather for it:
+    nearest first when a location is given, otherwise the areas with the most routes."""
     stmt = select(Area)
+    if area_id is not None:  # look up one known area (e.g. to label a picker)
+        stmt = stmt.where(Area.id == area_id)
     if q:
-        stmt = stmt.where(or_(Area.name.ilike(f"%{q}%"), Area.region.ilike(f"%{q}%")))
+        like = f"%{q.strip()}%"
+        has_crag = select(Crag.area_id).where(Crag.name.ilike(like))
+        stmt = stmt.where(or_(Area.name.ilike(like), Area.region.ilike(like), Area.id.in_(has_crag)))
     if rock_type:
         stmt = stmt.where(Area.rock_type == rock_type)
 
     distances: dict[int, float] = {}
     if lat is not None and lon is not None:
         distances = dict(geo.nearby(db, Area, lat, lon, radius_km))
-        stmt = stmt.where(Area.id.in_(distances.keys()))
+        if q or rock_type:
+            matching = set(db.scalars(stmt.with_only_columns(Area.id)))
+            ids = [i for i in distances if i in matching][:limit]  # `distances` is ordered nearest first
+        else:
+            ids = list(distances)[:limit]
+        areas = list(db.scalars(select(Area).where(Area.id.in_(ids)))) if ids else []
+    else:
+        # A name search ranks direct name matches above areas that only matched a crag or state.
+        order = [Area.name.ilike(f"%{q.strip()}%").desc()] if q else []
+        areas = list(db.scalars(stmt.order_by(*order, Area.route_count.desc(), Area.id).limit(limit)))
 
-    areas = list(db.scalars(stmt))
-    counts = dict(db.execute(select(Crag.area_id, func.count()).group_by(Crag.area_id)).all())
+    ids = [a.id for a in areas]
+    counts = dict(
+        db.execute(select(Crag.area_id, func.count()).where(Crag.area_id.in_(ids)).group_by(Crag.area_id)).all()
+    )
     forecasts = weather.get_forecasts(db, areas)
     out = [_area_summary(a, forecasts.get(a.id), counts.get(a.id, 0), distances.get(a.id)) for a in areas]
 
@@ -69,9 +88,13 @@ def list_areas(
         out.sort(key=lambda a: a["distance_km"])
     elif sort == "name":
         out.sort(key=lambda a: a["name"])
-    else:  # best conditions first
+    elif not q:  # best conditions first (a search keeps its relevance order)
         out.sort(key=lambda a: -a["conditions"]["score"] if a.get("conditions") else 1)
     return out
+
+
+def _crag_count(db: Session, area_id: int) -> int:
+    return db.scalar(select(func.count()).select_from(Crag).where(Crag.area_id == area_id)) or 0
 
 
 def area_detail(db: Session, area_id: int) -> dict[str, Any]:
@@ -82,8 +105,20 @@ def area_detail(db: Session, area_id: int) -> dict[str, Any]:
     crags = sorted(area.crags, key=lambda c: -c.route_count)
     out = _area_summary(area, forecast, len(crags))
     out["description"] = area.description
-    out["crags"] = [_crag_summary(c, area, forecast) for c in crags]
-    out["forecast"] = conditions.summarize(forecast, area.lat, area.lon, area.rock_type, None) if forecast else None
+    summary = conditions.summarize(forecast, area.lat, area.lon, area.rock_type, None) if forecast else None
+    # Big areas have thousands of crags, but the score only depends on rock type and aspect (crags in one
+    # area share a forecast), so run the model once per distinct pair and reuse the result.
+    briefs: dict[tuple[str, int | None], dict[str, Any]] = {}
+    out["crags"] = []
+    for c in crags:
+        row = _crag_summary(c, area, None)
+        if forecast:
+            key = (c.rock_type or area.rock_type, c.aspect_deg)
+            if key not in briefs:
+                briefs[key] = _brief(conditions.summarize(forecast, area.lat, area.lon, key[0], key[1]))
+            row["conditions"] = briefs[key]
+        out["crags"].append(row)
+    out["forecast"] = summary
     return out
 
 
@@ -94,7 +129,7 @@ def crag_detail(db: Session, crag_id: int) -> dict[str, Any]:
     area = crag.area
     forecast = weather.get_forecasts(db, [area]).get(area.id)
     out = _crag_summary(crag, area, forecast)
-    out["area"] = _area_summary(area, forecast, len(area.crags))
+    out["area"] = _area_summary(area, forecast, _crag_count(db, area.id))
     out["routes"] = [route_out(r) for r in sorted(crag.routes, key=lambda r: (r.grade_system, r.grade_index))]
     rock = crag.rock_type or area.rock_type
     out["forecast"] = conditions.summarize(forecast, crag.lat, crag.lon, rock, crag.aspect_deg) if forecast else None

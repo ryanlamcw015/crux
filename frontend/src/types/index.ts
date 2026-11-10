@@ -257,6 +257,13 @@ export interface Profile {
   friend_count: number
 }
 
+/** Database totals for the landing page. */
+export interface Stats {
+  areas: number
+  crags: number
+  routes: number
+}
+
 export interface Meta {
   grades: Record<GradeSystem, string[]>
   rock_types: Record<string, { label: string; note: string }>
